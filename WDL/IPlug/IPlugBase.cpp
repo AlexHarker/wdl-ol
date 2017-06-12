@@ -541,12 +541,7 @@ void IPlugBase::SetParameterFromGUI(int idx, double normalizedValue)
   GetParam(idx)->SetNormalized(normalizedValue);
   OnParamChange(idx, kGUI);
   
-  lock.Destroy();
-
-  // Destroy lock before informing host of change
-    
   InformHostOfParamChange(idx, normalizedValue);
-
 }
 
 void IPlugBase::OnParamReset(ParamChangeSource source)
@@ -974,8 +969,7 @@ void IPlugBase::DirtyParameters()
   {
     IMutexLock lock(this);
     double normalizedValue = GetParam(p)->GetNormalized();
-    lock.Destroy();
-      
+
     InformHostOfParamChange(p, normalizedValue);
   }
 }
