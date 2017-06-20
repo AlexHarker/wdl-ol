@@ -1031,7 +1031,7 @@ bool IGraphics::OnKeyDown(int x, int y, int key)
 
 void IGraphics::MoveMouseCursor(int x, int y)
 {
-  // Call this with the window-relative coords after doing platform specifc cursor move
+  // Call this with the window-relative coords after doing platform specific cursor move
     
   if (mMouseCapture >= 0)
   {
