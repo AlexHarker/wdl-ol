@@ -21,7 +21,7 @@ public:
 
   void HideMouseCursor(bool freeze = true);
   void ShowMouseCursor();
-  void MoveMouseCursor(int x, int y);
+  void MoveMouseCursor(int x, int y) { MoveMouseCursor(x, y, false); }
 
   int ShowMessageBox(const char* pText, const char* pCaption, int type);
 
@@ -63,6 +63,9 @@ public:
   
   bool GetTextFromClipboard(WDL_String* pStr);
 protected:
+
+  void MoveMouseCursor(int x, int y, bool retainHiddenPos);
+
   LICE_IBitmap* OSLoadBitmap(int ID, const char* name);
 
   void SetTooltip(const char* tooltip);

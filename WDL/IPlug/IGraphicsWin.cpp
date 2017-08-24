@@ -259,7 +259,7 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 		  {
 	    	pGraphics->OnMouseDrag(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), &GetMouseMod(wParam));
 			if (pGraphics->mMousePositionFrozen)
-				pGraphics->MoveMouseCursor(pGraphics->mHiddenMousePointX, pGraphics->mHiddenMousePointY);
+			  pGraphics->MoveMouseCursor(pGraphics->mHiddenMousePointX, pGraphics->mHiddenMousePointY);
 		  }
 	  }
 
@@ -642,7 +642,7 @@ void IGraphicsWin::ShowMouseCursor()
   }
 }
 
-void IGraphicsWin::MoveMouseCursor(int x, int y)
+void IGraphicsWin::MoveMouseCursor(int x, int y, bool retainHiddenPos)
 {
 	if (mTabletInput)
 		return;
@@ -655,13 +655,16 @@ void IGraphicsWin::MoveMouseCursor(int x, int y)
 
 	if (SetCursorPos(p.x, p.y))
     {
-      if (mCursorHidden)
-      {
-        mHiddenMousePointX = x;
-        mHiddenMousePointY = y;
+	  GetCursorPos(&p);
+	  ScreenToClient(GetMainWnd(), &p); 
+		
+	  if (mCursorHidden && !retainHiddenPos)
+	  {
+		mHiddenMousePointX = p.x;
+        mHiddenMousePointY = p.y;
       }
 
-	  IGraphics::MoveMouseCursor(x, y);
+	  IGraphics::MoveMouseCursor(p.x, p.y);
     }
 }
 
