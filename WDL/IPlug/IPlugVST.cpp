@@ -4,6 +4,12 @@
 
 const int VST_VERSION = 2400;
 
+VstIntPtr CallHost(WDL_Mutex *mutex, audioMasterCallback callback, AEffect* effect, VstInt32 opcode, VstInt32 index, VstIntPtr value, void* ptr, float opt)
+{
+    WDL_Mutex::TemporaryRelease FreeLock(mutex);
+    return callback(effect, opcode, index, value, ptr, opt);
+}
+
 int VSTSpkrArrType(int nchan)
 {
   if (!nchan) return kSpeakerArrEmpty;
@@ -90,28 +96,28 @@ IPlugVST::IPlugVST(IPlugInstanceInfo instanceInfo,
 
 void IPlugVST::BeginInformHostOfParamChange(int idx)
 {
-  mHostCallback(&mAEffect, audioMasterBeginEdit, idx, 0, 0, 0.0f);
+  CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterBeginEdit, idx, 0, 0, 0.0f);
 }
 
 void IPlugVST::InformHostOfParamChange(int idx, double normalizedValue)
 {
-  mHostCallback(&mAEffect, audioMasterAutomate, idx, 0, 0, (float) normalizedValue);
+  CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterAutomate, idx, 0, 0, (float) normalizedValue);
 }
 
 void IPlugVST::EndInformHostOfParamChange(int idx)
 {
-  mHostCallback(&mAEffect, audioMasterEndEdit, idx, 0, 0, 0.0f);
+  CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterEndEdit, idx, 0, 0, 0.0f);
 }
 
 void IPlugVST::InformHostOfProgramChange()
 {
-  mHostCallback(&mAEffect, audioMasterUpdateDisplay, 0, 0, 0, 0.0f);
+  CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterUpdateDisplay, 0, 0, 0, 0.0f);
 }
 
-inline VstTimeInfo* GetTimeInfo(audioMasterCallback hostCallback, AEffect* pAEffect, int filter = 0)
+inline VstTimeInfo* GetTimeInfo(WDL_Mutex *mutex, audioMasterCallback hostCallback, AEffect* pAEffect, int filter = 0)
 {
 #pragma warning(disable:4312) // Pointer size cast mismatch.
-  VstTimeInfo* pTI = (VstTimeInfo*) hostCallback(pAEffect, audioMasterGetTime, 0, filter, 0, 0);
+  VstTimeInfo* pTI = (VstTimeInfo*) CallHost(mutex, hostCallback, pAEffect, audioMasterGetTime, 0, filter, 0, 0);
 #pragma warning(default:4312)
   if (pTI && (!filter || (pTI->flags & filter)))
   {
@@ -122,7 +128,7 @@ inline VstTimeInfo* GetTimeInfo(audioMasterCallback hostCallback, AEffect* pAEff
 
 int IPlugVST::GetSamplePos()
 {
-  VstTimeInfo* pTI = GetTimeInfo(mHostCallback, &mAEffect);
+  VstTimeInfo* pTI = GetTimeInfo(&mMutex, mHostCallback, &mAEffect);
   if (pTI && pTI->samplePos >= 0.0)
   {
     return int(pTI->samplePos + 0.5);
@@ -134,7 +140,7 @@ double IPlugVST::GetTempo()
 {
   if (mHostCallback)
   {
-    VstTimeInfo* pTI = GetTimeInfo(mHostCallback, &mAEffect, kVstTempoValid);
+    VstTimeInfo* pTI = GetTimeInfo(&mMutex, mHostCallback, &mAEffect, kVstTempoValid);
     if (pTI && pTI->tempo >= 0.0)
     {
       return pTI->tempo;
@@ -146,7 +152,7 @@ double IPlugVST::GetTempo()
 void IPlugVST::GetTimeSig(int* pNum, int* pDenom)
 {
   *pNum = *pDenom = 0;
-  VstTimeInfo* pTI = GetTimeInfo(mHostCallback, &mAEffect, kVstTimeSigValid);
+  VstTimeInfo* pTI = GetTimeInfo(&mMutex, mHostCallback, &mAEffect, kVstTimeSigValid);
   if (pTI && pTI->timeSigNumerator >= 0.0 && pTI->timeSigDenominator >= 0.0)
   {
     *pNum = pTI->timeSigNumerator;
@@ -156,7 +162,8 @@ void IPlugVST::GetTimeSig(int* pNum, int* pDenom)
 
 void IPlugVST::GetTime(ITimeInfo* pTimeInfo)
 {
-  VstTimeInfo* pTI = GetTimeInfo(mHostCallback,
+  VstTimeInfo* pTI = GetTimeInfo(&mMutex,
+                                 mHostCallback,
                                  &mAEffect,
                                  kVstPpqPosValid |
                                  kVstTempoValid |
@@ -195,11 +202,11 @@ EHost IPlugVST::GetHost()
     char productStr[256];
     productStr[0] = '\0';
     int version = 0;
-    mHostCallback(&mAEffect, audioMasterGetProductString, 0, 0, productStr, 0.0f);
+    CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterGetProductString, 0, 0, productStr, 0.0f);
 
     if (CSTR_NOT_EMPTY(productStr))
     {
-      int decVer = mHostCallback(&mAEffect, audioMasterGetVendorVersion, 0, 0, 0, 0.0f);
+      int decVer = CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterGetVendorVersion, 0, 0, 0, 0.0f);
       int ver = decVer / 10000;
       int rmaj = (decVer - 10000 * ver) / 100;
       int rmin = (decVer - 10000 * ver - 100 * rmaj);
@@ -239,7 +246,7 @@ void IPlugVST::ResizeGraphics(int w, int h)
 
 bool IPlugVST::IsRenderingOffline()
 {
-  return mHostCallback(&mAEffect, audioMasterGetCurrentProcessLevel, 0, 0, 0, 0.0f) == kVstProcessLevelOffline;
+  return CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterGetCurrentProcessLevel, 0, 0, 0, 0.0f) == kVstProcessLevelOffline;
 }
 
 void IPlugVST::SetLatency(int samples)
@@ -257,7 +264,7 @@ bool IPlugVST::SendVSTEvent(VstEvent* pEvent)
   memset(&events, 0, sizeof(VstEvents));
   events.numEvents = 1;
   events.events[0] = pEvent;
-  return (mHostCallback(&mAEffect, audioMasterProcessEvents, 0, 0, &events, 0.0f) == 1);
+  return (CallHost(&mMutex, mHostCallback, &mAEffect, audioMasterProcessEvents, 0, 0, &events, 0.0f) == 1);
 }
 
 bool IPlugVST::SendMidiMsg(IMidiMsg* pMsg)
@@ -890,7 +897,7 @@ void IPlugVST::VSTPrepProcess(SAMPLETYPE** inputs, SAMPLETYPE** outputs, VstInt3
 {
   if (DoesMIDI())
   {
-    mHostCallback(&mAEffect, __audioMasterWantMidiDeprecated, 0, 0, 0, 0.0f);
+    CallHost(&mMutex, mHostCallback, &mAEffect, __audioMasterWantMidiDeprecated, 0, 0, 0, 0.0f);
   }
   AttachInputBuffers(0, NInChannels(), inputs, nFrames);
   AttachOutputBuffers(0, NOutChannels(), outputs);

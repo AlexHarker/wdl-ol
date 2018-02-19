@@ -54,11 +54,27 @@
 
 class WDL_Mutex {
   public:
+    
+    class TemporaryRelease {
+      public:
+        TemporaryRelease(WDL_Mutex *mutex) : mMutex(mutex), count(mutex ? mutex->Clear() : 0)
+        {}
+        ~TemporaryRelease()
+        {
+          if (mMutex)
+          {
+            for (int i = 0; i < count; i++)
+              mMutex->Enter();
+          }
+        }
+    private:
+        WDL_Mutex *mMutex;
+        int count;
+    };
+    
     WDL_Mutex() 
     {
-#ifdef _DEBUG
-      _debug_cnt=0;
-#endif
+      mutex_count = 0;
 
 #ifdef _WIN32
       InitializeCriticalSection(&m_cs);
@@ -88,10 +104,6 @@ class WDL_Mutex {
 
     void Enter()
     {
-#ifdef _DEBUG
-      _debug_cnt++;
-#endif
-
 #ifdef _WIN32
       EnterCriticalSection(&m_cs);
 #elif defined(WDL_MAC_USE_CARBON_CRITSEC)
@@ -99,13 +111,17 @@ class WDL_Mutex {
 #else
       pthread_mutex_lock(&m_mutex);
 #endif
+      
+      // NB. we only edit the count when we hold the lock - it will only ever be used by the owning thread
+        
+      mutex_count++;
     }
 
     void Leave()
     {
-#ifdef _DEBUG
-      _debug_cnt--;
-#endif
+      // NB. we only edit the count when we hold the lock - it will only ever be used by the owning thread
+        
+      mutex_count--;
 
 #ifdef _WIN32
       LeaveCriticalSection(&m_cs);
@@ -116,11 +132,19 @@ class WDL_Mutex {
 #endif
     }
 
-#ifdef _DEBUG
-  int _debug_cnt;
-#endif
-
   private:
+
+    int Clear()
+    {
+        Enter();
+        int count = mutex_count;
+        for (int i = 0; i < count; i++)
+            Leave();
+        return count - 1;
+    }
+    
+    int mutex_count;
+
 #ifdef _WIN32
   CRITICAL_SECTION m_cs;
 #elif defined(WDL_MAC_USE_CARBON_CRITSEC)
