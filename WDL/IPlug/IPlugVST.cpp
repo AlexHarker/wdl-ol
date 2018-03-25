@@ -823,7 +823,7 @@ VstIntPtr VSTCALLBACK IPlugVST::VSTDispatcher(AEffect *pEffect, VstInt32 opCode,
         }
       }
 
-      return 0;
+      return _this->VSTVendorSpecific(idx, value, ptr, opt);
     }
     case effGetProgram:
     {

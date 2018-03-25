@@ -61,6 +61,7 @@ protected:
 private:
   template <class SAMPLETYPE>
   void VSTPrepProcess(SAMPLETYPE** inputs, SAMPLETYPE** outputs, VstInt32 nFrames);
+  virtual VstIntPtr VSTVendorSpecific(VstInt32 idx, VstIntPtr value, void *ptr, float opt) { return 0; }
 
   ERect mEditRect;
   audioMasterCallback mHostCallback;
