@@ -793,6 +793,7 @@ VstIntPtr VSTCALLBACK IPlugVST::VSTDispatcher(AEffect *pEffect, VstInt32 opCode,
           _this->mHasVSTExtensions |= VSTEXT_COCOA;
           return 0xbeef0000;
         }
+        return _this->VSTCanDo((char *) ptr);
       }
       return 0;
     }
