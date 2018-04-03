@@ -341,6 +341,16 @@ public:
     mBitmap = GetUI()->GetScaledBitmap(mBitmap);
   }
   
+  void OnMouseDown(float x, float y, const IMouseMod& mod) override
+  {
+    GetUI()->HideMouseCursor();
+  }
+  
+  void OnMouseUp(float x, float y, const IMouseMod& mod) override
+  {
+    GetUI()->ShowMouseCursor();
+  }
+  
 private:
   
   IBitmap mBitmap;
