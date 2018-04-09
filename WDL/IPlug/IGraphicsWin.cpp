@@ -651,12 +651,12 @@ void IGraphicsWin::MoveMouseCursor(int x, int y, bool retainHiddenPos)
 	p.x = x;
 	p.y = y;
 
-    ClientToScreen(GetMainWnd(), &p);
+	ClientToScreen((HWND)GetWindow(), &p);
 
 	if (SetCursorPos(p.x, p.y))
     {
 	  GetCursorPos(&p);
-	  ScreenToClient(GetMainWnd(), &p); 
+	  ScreenToClient((HWND)GetWindow(), &p);
 		
 	  if (mCursorHidden && !retainHiddenPos)
 	  {
