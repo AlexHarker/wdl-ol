@@ -793,6 +793,7 @@ VstIntPtr VSTCALLBACK IPlugVST::VSTDispatcher(AEffect *pEffect, VstInt32 opCode,
           _this->mHasVSTExtensions |= VSTEXT_COCOA;
           return 0xbeef0000;
         }
+        return _this->VSTCanDo((char *) ptr);
       }
       return 0;
     }
@@ -823,7 +824,7 @@ VstIntPtr VSTCALLBACK IPlugVST::VSTDispatcher(AEffect *pEffect, VstInt32 opCode,
         }
       }
 
-      return 0;
+      return _this->VSTVendorSpecific(idx, value, ptr, opt);
     }
     case effGetProgram:
     {
