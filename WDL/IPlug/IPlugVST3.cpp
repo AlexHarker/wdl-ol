@@ -264,7 +264,6 @@ tresult PLUGIN_API IPlugVST3::initialize (FUnknown* context)
   }
 
   OnHostIdentified();
-  RestorePreset(0);
   
   return result;
 }
