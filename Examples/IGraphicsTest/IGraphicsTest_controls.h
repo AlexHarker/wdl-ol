@@ -9,8 +9,6 @@ public:
   {
     mText = text;
     mLabel.SetFormatted(32, "%s \n%s File", "Select a", extension);
-
-    mActionFunc = actionFunc;
   }
   
   void SetPath(const char* path)
@@ -35,8 +33,6 @@ public:
       mSelectedIndex = item->GetTag();
       mSelectedMenu = menu; // TODO: what if this is a submenu do we end up with pointer to an invalid object?
       mLabel.Set(item->GetText());
-      
-      mActionFunc(this);
     }
     
     //Redraw(); // TODO:  seems to need this
@@ -65,7 +61,7 @@ public:
   
   void OnMouseUp(float x, float y, const IMouseMod& mod) override
   {
-    GetUI()->ShowMouseCursor();
+    GetUI()->HideMouseCursor(false);
     IKnobControlBase::OnMouseUp(x, y, mod);
   }
   
@@ -114,7 +110,7 @@ public:
   
   void OnMouseUp(float x, float y, const IMouseMod& mod) override
   {
-    GetUI()->ShowMouseCursor();
+    GetUI()->HideMouseCursor(false);
     IKnobControlBase::OnMouseUp(x, y, mod);
   }
   
