@@ -264,6 +264,7 @@ tresult PLUGIN_API IPlugVST3::initialize (FUnknown* context)
   }
 
   OnHostIdentified();
+  OnParamReset(kReset);
   
   return result;
 }
